@@ -5,7 +5,7 @@
     Author: Dr. Farisa Morales (original IDL code) transcribed and modified by Cody King
 '''
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from numpy import interp, real as rl, imag as im
 from whiteSpaceParser import whitePaceSparser as wsp
 from get import getStart as GS, getCol as GC
@@ -317,7 +317,7 @@ imaginator(AstroSil['K'], True)
 
 imaginator(Water['K'], True)
 
-
+'''
 def flot(DICT, y):
     if y == 'K':
         plt.ylabel('Exitinction Coefficient')
@@ -337,3 +337,4 @@ flot(IMPOptConst, 'N')
 flot(AstroSil, 'N')
 flot(AmorphCarb, 'N')
 flot(DirtyIce, 'N')
+'''
