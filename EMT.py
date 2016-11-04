@@ -1,6 +1,7 @@
 '''
     Combines Real and Imaginary optical constants using Effective Medium Theory for SCIENCE
     Then calculates emissivites based on the optical constants derived- also for SCIENCE
+    STILL A WIP
     
     Author: Dr. Farisa Morales (original IDL code) transcribed and modified by Cody King
 '''
