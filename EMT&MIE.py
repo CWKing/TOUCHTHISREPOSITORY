@@ -7,10 +7,7 @@
 
 #import matplotlib.pyplot as plt
 from numpy import interp, real as rl, imag as im
-from whiteSpaceParser import whitePaceSparser as wsp
-from get import getStart as GS, getCol as GC
-from listifier import listifier as li
-from columnizer import columnizer as clm
+from kmod import whiteSpaceParser as wsp, GetStart as GS, getCol as GC, listifier as li, columnizer as clm
 from cmath import sqrt as sqrt
 
 #------------------------------------------------------
