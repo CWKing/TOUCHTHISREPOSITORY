@@ -62,8 +62,8 @@ def testPotentials(CELL, _GRID_):
 			truths += 1
 			truthindex = i
 	if truths == 1:
-		CELL.number[0] = truthindex + 1
-		CELL.byNecessity[0] = True
+		CELL.number = truthindex + 1
+		CELL.byNecessity = True
 		changePotentials(CELL, _GRID_)
 
 '''
