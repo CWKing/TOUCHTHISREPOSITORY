@@ -1,6 +1,7 @@
 
 /* TODO:
-
+    - Everything
+    - Figure out why the poteCells vector member in grid is not accumulating values through push_back
 */
 #include <iostream>
 #include <stdlib.h>
@@ -17,10 +18,10 @@ struct RowCol {
 };
 
 struct cell {                   // Define the cell structure
-    unsigned short val;         // To hold the value in the cell, needs to be initialized to 0 (an invalid input) for all cells
-    unsigned short blockNum;    // To hold the blockNumber the cell is in
-    unsigned short row;         // To hold the row the cell is in
-    unsigned short column;      // To hold the column the cell is in
+    short val;                  // To hold the value in the cell, needs to be initialized to 0 (an invalid input) for all cells
+    short blockNum;             // To hold the blockNumber the cell is in
+    short row;                  // To hold the row the cell is in
+    short column;               // To hold the column the cell is in
     bool pote[9];               // To hold which value could be placed in the cell; subscript 0 corresponds to 1, 1 to 2, etc all must be initialized to true
     bool byNec;                 // True if the number in the cell was placed by necessity from numbers in other cells; must be initialized to false
 };
@@ -43,6 +44,7 @@ void printGrid(grid);
 int main() {
     grid theGrid = main_initializer();
     printGrid(theGrid);
+    //for (vector<RowCol>::const_iterator i = theGrid.poteCells.begin(); i != theGrid.poteCells.end(); ++i) cout << *i << "\n";
     return 0;
 }
 //End function main
@@ -71,9 +73,10 @@ int intswitch(int num, int switchy = 0, int switchtype = 0) {
 cell cell_initializer (short ROW, short COL, short BLO) {
     cell temp_cell;
     temp_cell.val = 0;
-    temp_cell.blockNum = false;
+    temp_cell.blockNum = BLO;
     temp_cell.row = ROW;
     temp_cell.column = COL;
+    temp_cell.byNec = false;
     for (short i; i < 9; i++) {
         temp_cell.pote[i] = false;
     }
