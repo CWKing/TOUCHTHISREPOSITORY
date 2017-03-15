@@ -1,9 +1,5 @@
 '''
-WIP that will probably be abandoned in Python since Python doesn't seem to lend itself to forcing multiple names to simultaneously
-/POINT/ to the same object instance. POINTERS. FORCED REFRENCES. WHY NOT HAVE? WHY RELY ON CHANCE?
-WHY CAN'T I JUST MAKE TWO LISTS WHERE listA[n][m] AND listB[m][n] REFERENCE THE SAME OBJECT?
-
-Unless I can figure out a clever way to /quickly/ do checking on block sets
+WIP
 '''
 
 #def sudokuGen():
@@ -15,7 +11,7 @@ TODO:
 -Build in seed input prompt
 -Build in debugging
 -Finish building new check which identifies cell as only cell in a row/column/block that a specific number may go
--Figure out how to assign the same object instance to different indecies of multiple lists
+-Rebuild GRIDBB such that GRIBB[n][m] is a tuple of the row and column of the mth cell in the nth block; use this for block testing
 '''
 #---------------------
 #- Define cell class -
