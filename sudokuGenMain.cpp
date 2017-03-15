@@ -1,7 +1,6 @@
 
 /* TODO:
     - Everything
-    - Figure out why the poteCells vector member in grid is not accumulating values through push_back
 */
 #include <iostream>
 #include <stdlib.h>
@@ -12,21 +11,22 @@
 
 using namespace std;
 
-struct RowCol {
+bool debug = false;
+
+struct cell {                   //Define the cell structure; maybe should be defined as class for privacy?
+    short val;                  //To hold the value in the cell, needs to be initialized to 0 (an invalid input) for all cells
+    short blockNum;             //To hold the blockNumber the cell is in
+    short row;                  //To hold the row the cell is in
+    short column;               //To hold the column the cell is in
+    bool pote[9];               //To hold which value could be placed in the cell; subscript 0 corresponds to 1, 1 to 2, etc all must be initialized to true
+    bool byNec;                 //True if the number in the cell was placed by necessity from numbers in other cells; must be initialized to false
+};
+
+struct grid {                   //Define the grid structure
+    struct RowCol {             //Define the RowCol structure to contain values simultaneously
     short row;
     short col;
-};
-
-struct cell {                   // Define the cell structure
-    short val;                  // To hold the value in the cell, needs to be initialized to 0 (an invalid input) for all cells
-    short blockNum;             // To hold the blockNumber the cell is in
-    short row;                  // To hold the row the cell is in
-    short column;               // To hold the column the cell is in
-    bool pote[9];               // To hold which value could be placed in the cell; subscript 0 corresponds to 1, 1 to 2, etc all must be initialized to true
-    bool byNec;                 // True if the number in the cell was placed by necessity from numbers in other cells; must be initialized to false
-};
-
-struct grid {
+    };
     cell GRID[81];              //Define main grid; will hold in sequential order the cells
     cell* GRIDRF[9][9];         //Define Row First grid; a matrix with the first index equal to the row number and the second the column; consists of pointers to cell objects
     cell* GRIDCF[9][9];         //Define Column First grid; a matrix with the first index equal to the column number and the second the row; consists of pointers to cell objects
@@ -49,7 +49,7 @@ int main() {
 }
 //End function main
 
-//Very convoluted unit step function
+//Convoluted unit step function
 int intswitch(int num, int switchy = 0, int switchtype = 0) {
 	if (switchtype == 0) {
 		if (!(num < switchy)) {
@@ -86,6 +86,7 @@ cell cell_initializer (short ROW, short COL, short BLO) {
 //Main initializer function, declares everything in the grid structure
 grid main_initializer () {
     grid GRIDDY;
+    grid::RowCol tempRowCol;    //RowCol is a structure defined inside the grid structure so to declare an instance of it, the compiler needs to know where it's from (i.e. the purpose of grid::)
     short blockit = 0;
     for (short rowNum = 0; rowNum < 9; rowNum++) {
         for (short colNum = 0; colNum < 9; colNum++) {
@@ -93,10 +94,11 @@ grid main_initializer () {
             short blockSubIndex = (blockit % 3) + 3 * (static_cast<int>(static_cast<int>(blockit / 3.) / 3.) % 3 * (1 - intswitch(blockit,27) + intswitch(blockit,36)));
             GRIDDY.GRID[blockit] = cell_initializer(rowNum, colNum, blockNum);
             GRIDDY.GRIDRF[rowNum][colNum] = GRIDDY.GRIDCF[colNum][rowNum] = GRIDDY.GRIDBB[blockNum][blockSubIndex] = &GRIDDY.GRID[blockit];
-            RowCol tempRowCol;
             tempRowCol.row = rowNum;
             tempRowCol.col = colNum;
             GRIDDY.poteCells.push_back(tempRowCol);
+            //In the code::blocks IDE the debugging window for watching variable contents does not innately display vector contents; hence the line below
+            if (debug) cout << GRIDDY.poteCells.size() << ": " << GRIDDY.poteCells[blockit].row << ", " << GRIDDY.poteCells[blockit].col << "\n";
             blockit += 1;
         }
     }
@@ -114,3 +116,8 @@ void printGrid(grid GRIDDY) {
     }
     cout << "+---------+---------+---------+\n";
 }
+
+/*
+RowCol* poteCells = new RowCol[];
+GRIDDY.poteCells[blockit] = tempRowCol;
+*/
