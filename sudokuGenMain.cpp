@@ -13,8 +13,13 @@ using namespace std;
 
 bool debug = false;
 
-struct cell {                   //Define the cell structure; maybe should be defined as class for privacy?
-    short val;                  //To hold the value in the cell, needs to be initialized to 0 (an invalid input) for all cells
+struct RowCol {                 //Define the RowCol structure to contain values simultaneously
+    short row;
+    short col;
+    };
+
+struct cell {                   //Define the cell structure
+    short number;               //To hold the value in the cell, needs to be initialized to 0 (an invalid input) for all cells
     short blockNum;             //To hold the blockNumber the cell is in
     short row;                  //To hold the row the cell is in
     short column;               //To hold the column the cell is in
@@ -23,15 +28,15 @@ struct cell {                   //Define the cell structure; maybe should be def
 };
 
 struct grid {                   //Define the grid structure
-    struct RowCol {             //Define the RowCol structure to contain values simultaneously
-    short row;
-    short col;
-    };
     cell GRID[81];              //Define main grid; will hold in sequential order the cells
     cell* GRIDRF[9][9];         //Define Row First grid; a matrix with the first index equal to the row number and the second the column; consists of pointers to cell objects
-    cell* GRIDCF[9][9];         //Define Column First grid; a matrix with the first index equal to the column number and the second the row; consists of pointers to cell objects
     cell* GRIDBB[9][9];         //Define By Block grid; a matrix with the first index equal to the block number and the second the lower index; consists of pointers to cell objects
     vector<RowCol> poteCells;   //Define Potential cell vector; used to store all the iterations of rows and columns; to be used to grab random cells quickly
+};
+
+struct C4N {
+    short counter = 0;
+    vector<RowCol> indecies;
 };
 
 //Premeditative function declarations
@@ -39,12 +44,15 @@ int intswitch(int, int, int);
 cell cell_initializer(short, short, short);
 grid main_initializer ();
 void printGrid(grid);
+void testPotentials(cell &, grid &);
+void changePotentials(cell &, grid &);
+void soleCell(grid &);
 
 //Define function main
 int main() {
     grid theGrid = main_initializer();
     printGrid(theGrid);
-    //for (vector<RowCol>::const_iterator i = theGrid.poteCells.begin(); i != theGrid.poteCells.end(); ++i) cout << *i << "\n";
+
     return 0;
 }
 //End function main
@@ -72,7 +80,7 @@ int intswitch(int num, int switchy = 0, int switchtype = 0) {
 //Cell initializer function; for declaring new cells initialized with specific values
 cell cell_initializer (short ROW, short COL, short BLO) {
     cell temp_cell;
-    temp_cell.val = 0;
+    temp_cell.number = 0;
     temp_cell.blockNum = BLO;
     temp_cell.row = ROW;
     temp_cell.column = COL;
@@ -86,14 +94,14 @@ cell cell_initializer (short ROW, short COL, short BLO) {
 //Main initializer function, declares everything in the grid structure
 grid main_initializer () {
     grid GRIDDY;
-    grid::RowCol tempRowCol;    //RowCol is a structure defined inside the grid structure so to declare an instance of it, the compiler needs to know where it's from (i.e. the purpose of grid::)
+    RowCol tempRowCol;
     short blockit = 0;
     for (short rowNum = 0; rowNum < 9; rowNum++) {
         for (short colNum = 0; colNum < 9; colNum++) {
             short blockNum = (static_cast<int>(blockit / 3.) % 3) + (3 * static_cast<int>(static_cast<int>(blockit / 9.) / 3.));
             short blockSubIndex = (blockit % 3) + 3 * (static_cast<int>(static_cast<int>(blockit / 3.) / 3.) % 3 * (1 - intswitch(blockit,27) + intswitch(blockit,36)));
             GRIDDY.GRID[blockit] = cell_initializer(rowNum, colNum, blockNum);
-            GRIDDY.GRIDRF[rowNum][colNum] = GRIDDY.GRIDCF[colNum][rowNum] = GRIDDY.GRIDBB[blockNum][blockSubIndex] = &GRIDDY.GRID[blockit];
+            GRIDDY.GRIDRF[rowNum][colNum] = GRIDDY.GRIDBB[blockNum][blockSubIndex] = &GRIDDY.GRID[blockit];
             tempRowCol.row = rowNum;
             tempRowCol.col = colNum;
             GRIDDY.poteCells.push_back(tempRowCol);
@@ -110,13 +118,137 @@ void printGrid(grid GRIDDY) {
         if (n % 3 == 0) cout << "+---------+---------+---------+\n";
         for (int m = 0; m < 9; m++) {
             if (m % 3 == 0) cout << "|";
-            cout << "[" << GRIDDY.GRIDRF[n][m]->val << "]"; //'->' is how a pointer for a class points to an attribute of that class
+            cout << "[" << GRIDDY.GRIDRF[n][m]->number << "]"; //'->' is how a pointer for a class points to an attribute of that class
         }
         cout << "|" << endl;
     }
     cout << "+---------+---------+---------+\n";
 }
 
+void testPotentials(cell &CELL, grid &__GRID__) {
+	short truths = 0;
+	short truthindex = 0;
+	for (short i = 0; i < 9; i++) {
+		if (CELL.pote[i]) {
+			truths += 1;
+			truthindex = i;
+		}
+	}
+	if (truths == 1) {
+		CELL.number = truthindex + 1;
+		CELL.byNec = true;
+		__GRID__.poteCells.erase(__GRID__.poteCells.begin() + findPoteCellIndex(CELL, __GRID__));
+		changePotentials(CELL, __GRID__);
+	}
+}
+
+void changePotentials(cell &CELL, grid &__GRID__) {
+	for (short i = 0; i < 9; i++) CELL.pote[i] = false;
+	for (short c = 0; c < 9; c++) { //Checking the row
+		if (__GRID__.GRIDRF[CELL.row][c]->number == 0) {
+			__GRID__.GRIDRF[CELL.row][c]->pote[CELL.number - 1] = false;
+			testPotentials(*__GRID__.GRIDRF[CELL.row][c], __GRID__);
+		}
+	}
+	for (short r = 0; r < 9; r++) { //Checking the column
+		if (__GRID__.GRIDRF[r][CELL.column]->number == 0) {
+			__GRID__.GRIDRF[r][CELL.column]->pote[CELL.number - 1] = false;
+			testPotentials(*__GRID__.GRIDRF[r][CELL.column], __GRID__);
+		}
+	}
+    for (short b = 0; b < 9; b++) { //Checking the block
+        if (__GRID__.GRIDBB[CELL.blockNum][b]->number == 0) {
+            __GRID__.GRIDBB[CELL.blockNum][b]->pote[CELL.number - 1] = false;
+            testPotentials(*__GRID__.GRIDBB[CELL.blockNum][b], __GRID__);
+        }
+    }
+}
+
+void soleCell(grid &__GRID__) {
+    for (short r = 0; r < 9; r++) { //Checking row by row...
+        C4N CforN[9];
+        RowCol tempRowCol;
+        CforN[r].counter = 0;
+        for (short c = 0; c < 9; c++) {
+            for (short index = 0; index < 9; index++) {
+                if (__GRID__.GRIDRF[r][c]->pote[index]) {
+                    CforN[index].counter += 1;
+                    tempRowCol.row = r;
+                    tempRowCol.col = c;
+                    CforN[index].indecies.push_back(tempRowCol);
+                }
+            }
+        }
+        for (short i = 0; i < 9; i++) { //Looking for isolated values
+            if (CforN[i].counter == 1) {
+                __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->number = i + 1;
+				changePotentials(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__);
+            }
+        }
+    }
+    for (short c = 0; c < 9; c++) { //Checking column by column...
+        C4N CforN[9];
+        RowCol tempRowCol;
+        CforN[c].counter = 0;
+        for (short r = 0; r < 9; r++) {
+            for (short index = 0; index < 9; index++) {
+                if (__GRID__.GRIDRF[r][c]->pote[index]) {
+                    CforN[index].counter += 1;
+                    tempRowCol.row = r;
+                    tempRowCol.col = c;
+                    CforN[index].indecies.push_back(tempRowCol);
+                }
+            }
+        }
+        for (short i = 0; i < 9; i++) { //Looking for isolated values
+            if (CforN[i].counter == 1) {
+                __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->number = i + 1;
+				changePotentials(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__);
+            }
+        }
+    }
+    for (short b = 0; b < 9; b++) { //Checking block by block...
+        C4N CforN[9];
+        RowCol tempRowCol;
+        CforN[b].counter = 0;
+        for (short i = 0; i < 9; i++) {
+            for (short index = 0; index < 9; index++) {
+                if (__GRID__.GRIDBB[b][i]->pote[index]) {
+                    CforN[index].counter += 1;
+                    tempRowCol.row = __GRID__.GRIDBB[b][i]->row;
+                    tempRowCol.col = __GRID__.GRIDBB[b][i]->column;
+                    CforN[index].indecies.push_back(tempRowCol);
+                }
+            }
+        }
+        for (short i = 0; i < 9; i++) { //Looking for isolated values
+            if (CforN[i].counter == 1) {
+                __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->number = i + 1;
+				changePotentials(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__);
+            }
+        }
+    }
+}
+
+void randomCellNum(grid &__GRID__) {
+	short index = rand() % __GRID__.poteCells.size();
+	short row = __GRID__.poteCells[index].row;
+	short column = __GRID__.poteCells[index].col;
+	vector<short> pote;
+	for (short p = 0; p < 9; p++) {
+		if (__GRID__.GRIDRF[row][column]->pote[p]) {
+			pote.push_back(p + 1);
+		}
+	__GRID__.GRIDRF[row][column]->number = pote[rand() % static_cast<int>(pote.size())];
+	__GRID__.poteCells.erase(__GRID__.poteCells.begin() + index);
+	changePotentials(*__GRID__.GRIDRF[row][column], __GRID__);
+	}
+}
+
+//short findPoteCellIndex(cell &CELL, grid &__GRID__):
+	//for index, poteCell in enumerate(__GRID__.poteCells):
+		//if poteCell == (CELL.row, CELL.column):
+			//return index
 /*
 RowCol* poteCells = new RowCol[];
 GRIDDY.poteCells[blockit] = tempRowCol;
