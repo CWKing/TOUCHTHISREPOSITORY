@@ -44,15 +44,22 @@ int intswitch(int, int, int);
 cell cell_initializer(short, short, short);
 grid main_initializer ();
 void printGrid(grid);
+short findPoteCellIndex(cell, grid);
 void testPotentials(cell &, grid &);
 void changePotentials(cell &, grid &);
 void soleCell(grid &);
+void randomCellNum(grid &);
+
 
 //Define function main
 int main() {
     grid theGrid = main_initializer();
+    //printGrid(theGrid);
+    while (theGrid.poteCells.size() > 2) {
+        randomCellNum(theGrid);
+        soleCell(theGrid);
+    }
     printGrid(theGrid);
-
     return 0;
 }
 //End function main
@@ -86,7 +93,7 @@ cell cell_initializer (short ROW, short COL, short BLO) {
     temp_cell.column = COL;
     temp_cell.byNec = false;
     for (short i; i < 9; i++) {
-        temp_cell.pote[i] = false;
+        temp_cell.pote[i] = true;
     }
     return temp_cell;
 }
@@ -123,6 +130,13 @@ void printGrid(grid GRIDDY) {
         cout << "|" << endl;
     }
     cout << "+---------+---------+---------+\n";
+}
+
+short findPoteCellIndex(cell CELL, grid __GRID__) {
+	for (short index = 0; index < __GRID__.poteCells.size(); index++) {
+		if (__GRID__.poteCells[index].row == CELL.row && __GRID__.poteCells[index].col == CELL.column)
+			return index;
+	}
 }
 
 void testPotentials(cell &CELL, grid &__GRID__) {
@@ -245,10 +259,7 @@ void randomCellNum(grid &__GRID__) {
 	}
 }
 
-//short findPoteCellIndex(cell &CELL, grid &__GRID__):
-	//for index, poteCell in enumerate(__GRID__.poteCells):
-		//if poteCell == (CELL.row, CELL.column):
-			//return index
+
 /*
 RowCol* poteCells = new RowCol[];
 GRIDDY.poteCells[blockit] = tempRowCol;
