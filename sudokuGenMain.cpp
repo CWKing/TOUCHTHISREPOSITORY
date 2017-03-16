@@ -1,13 +1,12 @@
 
 /* TODO:
     - Everything
+    - Build in difficulty scaling
+    - Build in sudoku-to-file writer
 */
 #include <iostream>
 #include <stdlib.h>
-#include <ctime>
 #include <vector>
-#include <windows.h>  // Only needed for debugging
-#include <string>
 
 using namespace std;
 
@@ -53,13 +52,24 @@ void randomCellNum(grid &);
 
 //Define function main
 int main() {
+    short resp;
+    int seed;
+    cout << "Run debugging? 1)Yes 2)No: ";
+    cin >> resp;
+    cout << "\nPlease specify an integer seed: ";
+    cin >> seed;
+    srand(seed);
+    if (resp == 1) debug = true;
     grid theGrid = main_initializer();
-    //printGrid(theGrid);
-    while (theGrid.poteCells.size() > 2) {
+    while (theGrid.poteCells.size() > 0) {
         randomCellNum(theGrid);
         soleCell(theGrid);
+        if (debug) printGrid(theGrid);
     }
     printGrid(theGrid);
+    cout << "Sudoku for seed: " << seed << "\nPress any key to exit";
+    cin.ignore();   //Flushes nullspace from cin
+    cin.get();      //To stop the prog from exiting immediately on completion
     return 0;
 }
 //End function main
@@ -121,11 +131,17 @@ grid main_initializer () {
 }
 
 void printGrid(grid GRIDDY) {
-    for (int n = 0; n < 9; n++){
-        if (n % 3 == 0) cout << "+---------+---------+---------+\n";
-        for (int m = 0; m < 9; m++) {
-            if (m % 3 == 0) cout << "|";
-            cout << "[" << GRIDDY.GRIDRF[n][m]->number << "]"; //'->' is how a pointer for a class points to an attribute of that class
+    for (int row = 0; row < 9; row++){
+        if (row % 3 == 0) cout << "+---------+---------+---------+\n";
+        for (int col = 0; col < 9; col++) {
+            if (col % 3 == 0) cout << "|";
+            if (debug) cout << "[" << GRIDDY.GRIDRF[row][col]->number << "]"; //'->' is how a pointer for a class points to an attribute of that class
+            else {
+                cout << "[";
+                if (!(GRIDDY.GRIDRF[row][col]->byNec)) cout << GRIDDY.GRIDRF[row][col]->number; //'->' is how a pointer for a class points to an attribute of that class
+                else cout << " ";
+                cout << "]";
+            }
         }
         cout << "|" << endl;
     }
@@ -178,7 +194,7 @@ void changePotentials(cell &CELL, grid &__GRID__) {
     }
 }
 
-void soleCell(grid &__GRID__) {
+void soleCell(grid &__GRID__) { //Forgot to erase from theGrid.poteCells the cells filled here in soleCell
     for (short r = 0; r < 9; r++) { //Checking row by row...
         C4N CforN[9];
         RowCol tempRowCol;
@@ -196,6 +212,8 @@ void soleCell(grid &__GRID__) {
         for (short i = 0; i < 9; i++) { //Looking for isolated values
             if (CforN[i].counter == 1) {
                 __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->number = i + 1;
+                __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->byNec = true;
+                __GRID__.poteCells.erase(__GRID__.poteCells.begin() + findPoteCellIndex(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__)); //incorrect index
 				changePotentials(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__);
             }
         }
@@ -217,6 +235,8 @@ void soleCell(grid &__GRID__) {
         for (short i = 0; i < 9; i++) { //Looking for isolated values
             if (CforN[i].counter == 1) {
                 __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->number = i + 1;
+                __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->byNec = true;
+                __GRID__.poteCells.erase(__GRID__.poteCells.begin() + findPoteCellIndex(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__)); //incorrect index
 				changePotentials(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__);
             }
         }
@@ -238,6 +258,8 @@ void soleCell(grid &__GRID__) {
         for (short i = 0; i < 9; i++) { //Looking for isolated values
             if (CforN[i].counter == 1) {
                 __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->number = i + 1;
+                __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->byNec = true;
+                __GRID__.poteCells.erase(__GRID__.poteCells.begin() + findPoteCellIndex(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__)); //incorrect index
 				changePotentials(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__);
             }
         }
@@ -245,22 +267,44 @@ void soleCell(grid &__GRID__) {
 }
 
 void randomCellNum(grid &__GRID__) {
-	short index = rand() % __GRID__.poteCells.size();
-	short row = __GRID__.poteCells[index].row;
-	short column = __GRID__.poteCells[index].col;
+    short index, row, column;
+    index = rand() % __GRID__.poteCells.size();
+    row = __GRID__.poteCells[index].row;
+    column = __GRID__.poteCells[index].col;
 	vector<short> pote;
 	for (short p = 0; p < 9; p++) {
+        if (debug) cout << __GRID__.GRIDRF[row][column]->pote[p];
 		if (__GRID__.GRIDRF[row][column]->pote[p]) {
 			pote.push_back(p + 1);
 		}
-	__GRID__.GRIDRF[row][column]->number = pote[rand() % static_cast<int>(pote.size())];
+	}
+	if (debug) {
+        cout << "\nindex in theGrid.poteCells: " << index << ", row: " << row << ", column: " << column << endl;
+        cout << "theGrid.poteCells.size(): " << __GRID__.poteCells.size() << ", pote.size(): " << pote.size() << endl;
+	}
+	__GRID__.GRIDRF[row][column]->number = pote[rand() % static_cast<int>(pote.size())]; //Program received signal SIGFPE, Arithmetic exception. A filled cell is being filled by the random thinger
 	__GRID__.poteCells.erase(__GRID__.poteCells.begin() + index);
 	changePotentials(*__GRID__.GRIDRF[row][column], __GRID__);
-	}
 }
 
 
 /*
 RowCol* poteCells = new RowCol[];
 GRIDDY.poteCells[blockit] = tempRowCol;
+
+    do { //Some filled cells were persisting in poteCells
+        index = rand() % __GRID__.poteCells.size();
+        row = __GRID__.poteCells[index].row;
+        column = __GRID__.poteCells[index].col;
+        if (__GRID__.GRIDRF[row][column]->number != 0)
+            __GRID__.poteCells.erase(__GRID__.poteCells.begin() + index);
+    } while(__GRID__.GRIDRF[row][column]->number != 0);
+
+short iter = 0;
+while (iter < theGrid.poteCells.size()) {
+    if (theGrid.GRIDRF[theGrid.poteCells[iter].row][theGrid.poteCells[iter].row]->number != 0) {
+        theGrid.poteCells.erase(theGrid.poteCells.begin() + findPoteCellIndex(theGrid.GRIDRF[theGrid.poteCells[iter].row][theGrid.poteCells[iter].row], theGrid));
+    }
+    else iter += 1;
+}
 */
