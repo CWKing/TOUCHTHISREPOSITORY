@@ -3,14 +3,19 @@
     - Everything
     - Build in difficulty scaling
     - Build in sudoku-to-file writer
+    - Prog crashes for some seeds; find out why: Program received signal SIGSEGV, Segmentation fault.
+        - SIGSEV comes from bad memory access; i.e. attempting to do stuff to memory that is not accessible
+        - BAD SEED(S): 17, 27, 70, 79, 98
 */
 #include <iostream>
 #include <stdlib.h>
 #include <vector>
+#include <string>
 
 using namespace std;
 
 bool debug = false;
+bool printCompleted = false;
 
 struct RowCol {                 //Define the RowCol structure to contain values simultaneously
     short row;
@@ -48,23 +53,30 @@ void testPotentials(cell &, grid &);
 void changePotentials(cell &, grid &);
 void soleCell(grid &);
 void randomCellNum(grid &);
+//void debugPrintOut (grid);
 
 
 //Define function main
 int main() {
-    short resp;
+    short resp, resp1;
     int seed;
     cout << "Run debugging? 1)Yes 2)No: ";
     cin >> resp;
+    if (resp == 2) {
+        cout << "Print a filled sudoku? 1)Yes 2)No: ";
+        cin >> resp1;
+        if (resp1 == 1) printCompleted = true;
+    }
     cout << "\nPlease specify an integer seed: ";
     cin >> seed;
     srand(seed);
     if (resp == 1) debug = true;
     grid theGrid = main_initializer();
     while (theGrid.poteCells.size() > 0) {
+        //if (debug) cout << "Calling randomCellNum\n";
         randomCellNum(theGrid);
+        //if (debug) cout << "Calling soleCell\n";
         soleCell(theGrid);
-        if (debug) printGrid(theGrid);
     }
     printGrid(theGrid);
     cout << "Sudoku for seed: " << seed << "\nPress any key to exit";
@@ -123,7 +135,7 @@ grid main_initializer () {
             tempRowCol.col = colNum;
             GRIDDY.poteCells.push_back(tempRowCol);
             //In the code::blocks IDE the debugging window for watching variable contents does not innately display vector contents; hence the line below
-            if (debug) cout << GRIDDY.poteCells.size() << ": " << GRIDDY.poteCells[blockit].row << ", " << GRIDDY.poteCells[blockit].col << "\n";
+            //if (debug) cout << GRIDDY.poteCells.size() << ": " << GRIDDY.poteCells[blockit].row << ", " << GRIDDY.poteCells[blockit].col << "\n";
             blockit += 1;
         }
     }
@@ -135,7 +147,7 @@ void printGrid(grid GRIDDY) {
         if (row % 3 == 0) cout << "+---------+---------+---------+\n";
         for (int col = 0; col < 9; col++) {
             if (col % 3 == 0) cout << "|";
-            if (debug) cout << "[" << GRIDDY.GRIDRF[row][col]->number << "]"; //'->' is how a pointer for a class points to an attribute of that class
+            if (debug || printCompleted) cout << "[" << GRIDDY.GRIDRF[row][col]->number << "]"; //'->' is how a pointer for a class points to an attribute of that class
             else {
                 cout << "[";
                 if (!(GRIDDY.GRIDRF[row][col]->byNec)) cout << GRIDDY.GRIDRF[row][col]->number; //'->' is how a pointer for a class points to an attribute of that class
@@ -167,6 +179,12 @@ void testPotentials(cell &CELL, grid &__GRID__) {
 	if (truths == 1) {
 		CELL.number = truthindex + 1;
 		CELL.byNec = true;
+		if (debug) {
+            cout << "Putting [" << truthindex + 1 << "] in cell [" << CELL.row << ", " << CELL.column << "] (lone potential)\n";
+            printGrid(__GRID__);
+            cin.ignore();
+            cin.get();
+		}
 		__GRID__.poteCells.erase(__GRID__.poteCells.begin() + findPoteCellIndex(CELL, __GRID__));
 		changePotentials(CELL, __GRID__);
 	}
@@ -177,24 +195,27 @@ void changePotentials(cell &CELL, grid &__GRID__) {
 	for (short c = 0; c < 9; c++) { //Checking the row
 		if (__GRID__.GRIDRF[CELL.row][c]->number == 0) {
 			__GRID__.GRIDRF[CELL.row][c]->pote[CELL.number - 1] = false;
+			//if (debug) cout << "Calling testPotentials for cell: [R- " << CELL.row << ", C- " << c << ", B- " << __GRID__.GRIDRF[CELL.row][c]->blockNum << "]\n";
 			testPotentials(*__GRID__.GRIDRF[CELL.row][c], __GRID__);
 		}
 	}
 	for (short r = 0; r < 9; r++) { //Checking the column
 		if (__GRID__.GRIDRF[r][CELL.column]->number == 0) {
 			__GRID__.GRIDRF[r][CELL.column]->pote[CELL.number - 1] = false;
+			//if (debug) cout << "Calling testPotentials for cell: [R- " << r << ", C- " << CELL.column << ", B- " << __GRID__.GRIDRF[r][CELL.column]->blockNum << "]\n";
 			testPotentials(*__GRID__.GRIDRF[r][CELL.column], __GRID__);
 		}
 	}
     for (short b = 0; b < 9; b++) { //Checking the block
         if (__GRID__.GRIDBB[CELL.blockNum][b]->number == 0) {
             __GRID__.GRIDBB[CELL.blockNum][b]->pote[CELL.number - 1] = false;
+            //if (debug) cout << "Calling testPotentials for cell: [R- " << __GRID__.GRIDBB[CELL.blockNum][b]->row << ", C- " << __GRID__.GRIDBB[CELL.blockNum][b]->column << ", B- " << __GRID__.GRIDBB[CELL.blockNum][b]->blockNum << "]\n";
             testPotentials(*__GRID__.GRIDBB[CELL.blockNum][b], __GRID__);
         }
     }
 }
 
-void soleCell(grid &__GRID__) { //Forgot to erase from theGrid.poteCells the cells filled here in soleCell
+void soleCell(grid &__GRID__) {
     for (short r = 0; r < 9; r++) { //Checking row by row...
         C4N CforN[9];
         RowCol tempRowCol;
@@ -209,11 +230,18 @@ void soleCell(grid &__GRID__) { //Forgot to erase from theGrid.poteCells the cel
                 }
             }
         }
+        //if (debug) cout << "For row [" << r << "] CforN contains [" << CforN[r].indecies.size() << "] values";
         for (short i = 0; i < 9; i++) { //Looking for isolated values
             if (CforN[i].counter == 1) {
+                if (debug) cout << "From row check, putting [" << i + 1 << "] in the cell [" << CforN[i].indecies[0].row << ", " << CforN[i].indecies[0].col << "] (isolated value)\n";
                 __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->number = i + 1;
                 __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->byNec = true;
-                __GRID__.poteCells.erase(__GRID__.poteCells.begin() + findPoteCellIndex(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__)); //incorrect index
+                if (debug) {
+                    printGrid(__GRID__);
+                    cin.ignore();
+                    cin.get();
+                }
+                __GRID__.poteCells.erase(__GRID__.poteCells.begin() + findPoteCellIndex(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__));
 				changePotentials(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__);
             }
         }
@@ -234,9 +262,15 @@ void soleCell(grid &__GRID__) { //Forgot to erase from theGrid.poteCells the cel
         }
         for (short i = 0; i < 9; i++) { //Looking for isolated values
             if (CforN[i].counter == 1) {
+                if (debug) cout << "From column check, putting [" << i + 1 << "] in the cell [" << CforN[i].indecies[0].row << ", " << CforN[i].indecies[0].col << "] (isolated value)\n";
                 __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->number = i + 1;
                 __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->byNec = true;
-                __GRID__.poteCells.erase(__GRID__.poteCells.begin() + findPoteCellIndex(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__)); //incorrect index
+                if (debug) {
+                    printGrid(__GRID__);
+                    cin.ignore();
+                    cin.get();
+                }
+                __GRID__.poteCells.erase(__GRID__.poteCells.begin() + findPoteCellIndex(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__));
 				changePotentials(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__);
             }
         }
@@ -257,9 +291,15 @@ void soleCell(grid &__GRID__) { //Forgot to erase from theGrid.poteCells the cel
         }
         for (short i = 0; i < 9; i++) { //Looking for isolated values
             if (CforN[i].counter == 1) {
+                if (debug) cout <<  "From block check, putting [" << i + 1 << "] in the cell [" << CforN[i].indecies[0].row << ", " << CforN[i].indecies[0].col << "] (isolated value)\n";
                 __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->number = i + 1;
                 __GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col]->byNec = true;
-                __GRID__.poteCells.erase(__GRID__.poteCells.begin() + findPoteCellIndex(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__)); //incorrect index
+                if (debug) {
+                    printGrid(__GRID__);
+                    cin.ignore();
+                    cin.get();
+                }
+                __GRID__.poteCells.erase(__GRID__.poteCells.begin() + findPoteCellIndex(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__));
 				changePotentials(*__GRID__.GRIDRF[CforN[i].indecies[0].row][CforN[i].indecies[0].col], __GRID__);
             }
         }
@@ -279,14 +319,33 @@ void randomCellNum(grid &__GRID__) {
 		}
 	}
 	if (debug) {
-        cout << "\nindex in theGrid.poteCells: " << index << ", row: " << row << ", column: " << column << endl;
-        cout << "theGrid.poteCells.size(): " << __GRID__.poteCells.size() << ", pote.size(): " << pote.size() << endl;
+        cout << "\nindex in poteCells: " << index << ", row: " << row << ", column: " << column << endl;
+        cout << "poteCells.size(): " << __GRID__.poteCells.size() << ", pote.size(): " << pote.size() << endl;
 	}
-	__GRID__.GRIDRF[row][column]->number = pote[rand() % static_cast<int>(pote.size())]; //Program received signal SIGFPE, Arithmetic exception. A filled cell is being filled by the random thinger
+	int randomNumber = rand() % static_cast<int>(pote.size());
+	if (debug) cout << "Putting number [" << pote[randomNumber] << "] in cell [" << row << ", " << column << "] (random potential)\n";
+	__GRID__.GRIDRF[row][column]->number = pote[randomNumber]; //Program received signal SIGFPE, Arithmetic exception. A filled cell is being filled by the random thinger
+	if (debug) cout << "Removing cell [" << __GRID__.poteCells[index].row << ", " << __GRID__.poteCells[index].col << "] from poteCells\n";
 	__GRID__.poteCells.erase(__GRID__.poteCells.begin() + index);
+    if (debug) {
+        printGrid(__GRID__);
+        cin.ignore();
+        cin.get();
+    }
+	//if (debug) cout << "Calling change Potentials for cell: [R- " << row << ", C- " << column << ", N- " << __GRID__.GRIDRF[row][column]->number << "]\n";
 	changePotentials(*__GRID__.GRIDRF[row][column], __GRID__);
 }
 
+/*
+void debugPrintOut(grid GRIDDY) {
+    for (short index = 0; index < 81; index++){
+        cout << "\nCell [" << index << "]: row- " << GRIDDY.GRID[index].row << ", column- " << GRIDDY.GRID[index].column << ", number- " << GRIDDY.GRID[index].number << endl;
+        cout << "Potentials:\n\t";
+        for (short p = 0; p < 9; p++) cout << p + 1 << ":" << GRIDDY.GRID[index].pote[p] << " ";
+    }
+    cout << endl;
+}
+*/
 
 /*
 RowCol* poteCells = new RowCol[];
